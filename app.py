@@ -5,6 +5,7 @@ API endpoints for sentiment analysis using trained ML model
 
 import os
 import pickle
+import joblib
 import re
 import json
 from flask import Flask, request, jsonify, render_template
@@ -38,9 +39,8 @@ def load_model():
     if os.path.exists(model_path):
         try:
             print(f"📦 Model file found, size: {os.path.getsize(model_path) / 1024 / 1024:.2f} MB")
-            with open(model_path, 'rb') as f:
-                model = pickle.load(f)
-            print("✅ Model loaded successfully")
+            model = joblib.load(model_path)
+            print("✅ Model loaded successfully (using joblib)")
             model_ready = True
             
             # Load metrics if available

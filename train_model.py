@@ -12,6 +12,7 @@ Usage:
 import pandas as pd
 import numpy as np
 import pickle
+import joblib
 import re
 import sys
 import os
@@ -170,9 +171,9 @@ def save_model(pipeline, metrics):
     model_path = 'sentiment_model.pkl'
     
     try:
-        with open(model_path, 'wb') as f:
-            pickle.dump(pipeline, f)
-        print(f"✓ Model saved: {model_path}")
+        # Use joblib instead of pickle for better sklearn compatibility
+        joblib.dump(pipeline, model_path)
+        print(f"✓ Model saved (joblib): {model_path}")
         
         # Save metrics as JSON for easy frontend access
         import json
