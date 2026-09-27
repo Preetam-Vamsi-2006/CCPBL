@@ -21,8 +21,13 @@ metrics = None
 def load_model():
     """Load the pre-trained sentiment analysis model"""
     global model, metrics
-    model_path = 'sentiment_model.pkl'
-    metrics_path = 'model_metrics.json'
+    
+    # Use absolute path for Vercel compatibility
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(current_dir, 'sentiment_model.pkl')
+    metrics_path = os.path.join(current_dir, 'model_metrics.json')
+    
+    print(f"📁 Looking for model at: {model_path}")
     
     if os.path.exists(model_path):
         try:
@@ -33,7 +38,6 @@ def load_model():
             # Load metrics if available
             if os.path.exists(metrics_path):
                 try:
-                    import json
                     with open(metrics_path, 'r') as f:
                         metrics = json.load(f)
                     print("✓ Model metrics loaded successfully")
@@ -47,10 +51,13 @@ def load_model():
             return True
         except Exception as e:
             print(f"✗ Error loading model: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return False
     else:
-        print(f"✗ Model file not found: {model_path}")
-        print("  Please run 'python train_model.py' first")
+        print(f"✗ Model file not found at: {model_path}")
+        print(f"  Current directory: {current_dir}")
+        print(f"  Directory contents: {os.listdir(current_dir)}")
         return False
 
 def clean_text(text):

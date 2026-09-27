@@ -23,22 +23,39 @@ def load_model_on_startup():
     """Load the model when the WSGI app starts"""
     global _model, _model_loaded
     
-    model_path = os.path.join(os.path.dirname(__file__), 'sentiment_model.pkl')
+    # Use absolute path for Vercel compatibility
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(current_dir, 'sentiment_model.pkl')
+    metrics_path = os.path.join(current_dir, 'model_metrics.json')
+    
+    print(f"🔍 WSGI Startup: Looking for model at {model_path}")
     
     if os.path.exists(model_path):
         try:
+            print(f"📦 Model file found, size: {os.path.getsize(model_path) / 1024 / 1024:.2f} MB")
             with open(model_path, 'rb') as f:
                 _model = pickle.load(f)
-            print("✓ Model loaded successfully in WSGI")
+            print("✅ Model loaded successfully in WSGI")
             _model_loaded = True
             # Set the model in the app context
             app.model = _model
+            
+            # Load metrics too
+            if os.path.exists(metrics_path):
+                try:
+                    with open(metrics_path, 'r') as f:
+                        app.metrics = json.load(f)
+                    print("✅ Metrics loaded successfully")
+                except Exception as e:
+                    print(f"⚠️ Warning: Could not load metrics: {str(e)}")
         except Exception as e:
-            print(f"✗ Error loading model in WSGI: {str(e)}")
+            print(f"❌ Error loading model in WSGI: {str(e)}")
+            import traceback
+            traceback.print_exc()
             _model_loaded = False
     else:
-        print(f"⚠ Warning: Model file not found at {model_path}")
-        print("  Sentiment analysis will not work until model is trained")
+        print(f"❌ Model file NOT found at {model_path}")
+        print(f"   Directory contents: {os.listdir(current_dir)}")
         _model_loaded = False
 
 # Middleware to ensure model is loaded
