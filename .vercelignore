@@ -1,0 +1,19 @@
+# Vercel ignore file
+# Keep everything needed for deployment
+
+# Exclude these from Vercel
+.git
+.gitignore
+DEPLOYMENT.md
+QUICKSTART.md
+METRICS_DISPLAY.md
+IMDB Dataset.csv
+explore_dataset.py
+quick_train.py
+train_model.py
+
+# But include these critical files
+!sentiment_model.pkl
+!model_metrics.json
+!static/
+!templates/
