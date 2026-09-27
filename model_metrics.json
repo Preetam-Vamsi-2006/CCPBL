@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-09-27T20:01:02.410510",
+  "accuracy": 0.8554,
+  "precision": 0.8433,
+  "recall": 0.873,
+  "f1_score": 0.8579,
+  "model_type": "Multinomial Naive Bayes with TF-IDF",
+  "features": {
+    "max_features": 5000,
+    "ngram_range": [
+      1,
+      2
+    ],
+    "min_df": 5,
+    "max_df": 0.8
+  },
+  "dataset": {
+    "name": "IMDB Movie Reviews",
+    "total_reviews": 50000,
+    "train_split": 0.8,
+    "test_split": 0.2,
+    "classes": [
+      "negative",
+      "positive"
+    ]
+  },
+  "version": "1.0.0"
+}

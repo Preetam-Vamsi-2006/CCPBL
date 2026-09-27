@@ -61,12 +61,10 @@ Thumbs.db
 htmlcov/
 
 # Build artifacts
-*.pkl
 *.joblib
 
-# Model and metrics files (keep locally, exclude from git)
-sentiment_model.pkl
-model_metrics.json
+# Model and metrics files - INCLUDE sentiment_model.pkl and model_metrics.json for production
+# Only exclude large datasets and temporary metrics text files
 model_metrics.txt
 
 # Documentation files (exclude all except README.md)
