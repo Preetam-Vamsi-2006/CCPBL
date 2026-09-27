@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-27T20:01:02.410510",
-  "accuracy": 0.8554,
-  "precision": 0.8433,
-  "recall": 0.873,
-  "f1_score": 0.8579,
+  "timestamp": "2026-09-27T20:27:28.169613",
+  "accuracy": 0.8408,
+  "precision": 0.8233,
+  "recall": 0.8739,
+  "f1_score": 0.8479,
   "model_type": "Multinomial Naive Bayes with TF-IDF",
   "features": {
     "max_features": 5000,
