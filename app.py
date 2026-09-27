@@ -10,6 +10,7 @@ import json
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import numpy as np
+from datetime import datetime
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 CORS(app)
@@ -17,10 +18,14 @@ CORS(app)
 # Global variable to store the model
 model = None
 metrics = None
+model_ready = False
+
+print("🚀 Flask app initializing...")
+print(f"📁 App directory: {os.path.dirname(os.path.abspath(__file__))}")
 
 def load_model():
     """Load the pre-trained sentiment analysis model"""
-    global model, metrics
+    global model, metrics, model_ready
     
     # Use absolute path for Vercel compatibility
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -28,36 +33,52 @@ def load_model():
     metrics_path = os.path.join(current_dir, 'model_metrics.json')
     
     print(f"📁 Looking for model at: {model_path}")
+    print(f"📁 Current directory: {current_dir}")
     
     if os.path.exists(model_path):
         try:
+            print(f"📦 Model file found, size: {os.path.getsize(model_path) / 1024 / 1024:.2f} MB")
             with open(model_path, 'rb') as f:
                 model = pickle.load(f)
-            print("✓ Model loaded successfully")
+            print("✅ Model loaded successfully")
+            model_ready = True
             
             # Load metrics if available
             if os.path.exists(metrics_path):
                 try:
                     with open(metrics_path, 'r') as f:
                         metrics = json.load(f)
-                    print("✓ Model metrics loaded successfully")
+                    print("✅ Model metrics loaded successfully")
                 except Exception as e:
-                    print(f"⚠ Warning: Could not load metrics: {str(e)}")
+                    print(f"⚠️ Warning: Could not load metrics: {str(e)}")
                     metrics = None
             else:
-                print("⚠ Warning: Model metrics file not found")
+                print("⚠️ Warning: Model metrics file not found")
+                print(f"   Looking at: {metrics_path}")
                 metrics = None
             
             return True
         except Exception as e:
-            print(f"✗ Error loading model: {str(e)}")
+            print(f"❌ Error loading model: {str(e)}")
             import traceback
             traceback.print_exc()
+            model_ready = False
             return False
     else:
-        print(f"✗ Model file not found at: {model_path}")
-        print(f"  Current directory: {current_dir}")
-        print(f"  Directory contents: {os.listdir(current_dir)}")
+        print(f"❌ Model file NOT found at: {model_path}")
+        print(f"   Directory contents:")
+        try:
+            contents = os.listdir(current_dir)
+            for item in contents[:20]:  # Show first 20 items
+                full_path = os.path.join(current_dir, item)
+                if os.path.isfile(full_path):
+                    size = os.path.getsize(full_path) / 1024
+                    print(f"     - {item} ({size:.1f} KB)")
+                else:
+                    print(f"     - {item}/ (directory)")
+        except Exception as e:
+            print(f"   Error listing directory: {e}")
+        model_ready = False
         return False
 
 def clean_text(text):
@@ -77,13 +98,17 @@ def analyze_sentiment(review_text):
     Analyze sentiment of the given review text
     Returns: {sentiment, confidence, prediction}
     """
-    if model is None:
-        return {
-            'error': 'Model not loaded',
-            'sentiment': None,
-            'confidence': 0,
-            'message': 'Please train the model first'
-        }
+    global model_ready
+    
+    if model is None or not model_ready:
+        # Try one more time to load
+        if not load_model():
+            return {
+                'error': 'Model not loaded',
+                'sentiment': None,
+                'confidence': 0,
+                'message': 'Model is still loading, please try again in a moment'
+            }
     
     try:
         # Clean the text
@@ -114,6 +139,7 @@ def analyze_sentiment(review_text):
         }
     
     except Exception as e:
+        print(f"❌ Error during analysis: {str(e)}")
         return {
             'error': str(e),
             'sentiment': None,
@@ -149,12 +175,17 @@ def api_home():
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
-    model_loaded = model is not None
+    # Try to load model if not already loaded
+    if not model_ready:
+        load_model()
+    
     return jsonify({
-        'status': 'healthy' if model_loaded else 'unhealthy',
-        'model_loaded': model_loaded,
-        'timestamp': pd.Timestamp.now().isoformat()
-    }), 200 if model_loaded else 503
+        'status': 'healthy' if model_ready else 'loading',
+        'model_loaded': model_ready,
+        'model_ready': model_ready,
+        'timestamp': datetime.now().isoformat(),
+        'message': 'Model is loading, please wait...' if not model_ready else 'All systems operational'
+    }), 200 if model_ready else 503
 
 @app.route('/api/model-info', methods=['GET'])
 def model_info():
@@ -353,3 +384,29 @@ if __name__ == '__main__':
     else:
         print("\n✗ Cannot start server without model")
         print("Please train the model first: python train_model.py")
+
+
+# ============================================================================
+# INITIALIZATION & STARTUP
+# ============================================================================
+
+@app.before_request
+def ensure_model_loaded():
+    """Ensure model is loaded before processing any request"""
+    global model_ready
+    if not model_ready and model is None:
+        print("⚠️ Model not loaded yet, attempting to load...")
+        load_model()
+
+# Try to load model on startup
+print("\n" + "=" * 70)
+print("LOADING SENTIMENT ANALYSIS MODEL ON STARTUP")
+print("=" * 70)
+load_model()
+print("=" * 70 + "\n")
+
+if __name__ == '__main__':
+    print("Starting Flask development server...")
+    print("Server running on http://localhost:5000")
+    print("API documentation: http://localhost:5000")
+    app.run(debug=True, host='0.0.0.0', port=5000)
