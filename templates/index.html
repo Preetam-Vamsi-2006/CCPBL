@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis - IMDB Review Classifier</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-brain"></i>
+                <span>SentimentAI</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link active" data-section="home">Home</a></li>
+                <li><a href="#metrics" class="nav-link" data-section="metrics">Metrics</a></li>
+                <li><a href="#analyze" class="nav-link" data-section="analyze">Analyze</a></li>
+                <li><a href="#batch" class="nav-link" data-section="batch">Batch</a></li>
+                <li><a href="#docs" class="nav-link" data-section="docs">Docs</a></li>
+            </ul>
+            <div class="nav-status" id="navStatus">
+                <span class="status-dot online"></span>
+                <span class="status-text">Online</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="section hero-section active">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <span class="gradient-text">Sentiment Analysis</span>
+                <br>Powered by AI
+            </h1>
+            <p class="hero-subtitle">Analyze movie reviews and opinions with advanced machine learning</p>
+            <button class="btn btn-primary btn-lg" onclick="showSection('analyze')">
+                <i class="fas fa-play"></i> Get Started
+            </button>
+        </div>
+        <div class="hero-illustration">
+            <div class="floating-card">
+                <i class="fas fa-smile"></i>
+                <span>Positive</span>
+            </div>
+            <div class="floating-card">
+                <i class="fas fa-frown"></i>
+                <span>Negative</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Model Metrics Section -->
+    <section id="metrics" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Model Performance</h2>
+                <p>Real-time metrics from the trained sentiment analysis model</p>
+            </div>
+
+            <div id="metricsContainer" class="metrics-container">
+                <div class="loading-spinner">
+                    <div class="spinner">
+                        <div class="dot dot-1"></div>
+                        <div class="dot dot-2"></div>
+                        <div class="dot dot-3"></div>
+                    </div>
+                    <p>Loading model metrics...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Single Review Analysis Section -->
+    <section id="analyze" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Analyze Single Review</h2>
+                <p>Enter a movie review to get instant sentiment analysis</p>
+            </div>
+
+            <div class="analysis-container">
+                <!-- Input Panel -->
+                <div class="input-panel">
+                    <form id="singleForm" onsubmit="analyzeSingle(event)">
+                        <div class="form-group">
+                            <label for="reviewInput">Your Review:</label>
+                            <textarea 
+                                id="reviewInput" 
+                                placeholder="Write your honest movie review here..."
+                                rows="6"
+                                required
+                            ></textarea>
+                            <div class="char-count">
+                                <span id="charCount">0</span> / 1000 characters
+                            </div>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-magic"></i> Analyze
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                <i class="fas fa-redo"></i> Clear
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Result Panel -->
+                <div class="result-panel" id="resultPanel" style="display: none;">
+                    <div class="result-header">
+                        <h3>Analysis Result</h3>
+                        <button class="btn-close" onclick="closeResult()"><i class="fas fa-times"></i></button>
+                    </div>
+
+                    <div class="sentiment-display">
+                        <div class="sentiment-badge" id="sentimentBadge">
+                            <i class="fas fa-question"></i>
+                            <span>Analyzing...</span>
+                        </div>
+                    </div>
+
+                    <div class="confidence-section">
+                        <label>Confidence Score</label>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="confidenceFill" style="width: 0%"></div>
+                        </div>
+                        <div class="confidence-text">
+                            <span id="confidenceValue">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="text-preview">
+                        <label>Processed Text:</label>
+                        <div class="preview-text" id="textPreview"></div>
+                    </div>
+
+                    <div class="result-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Prediction</span>
+                            <span class="stat-value" id="predictionValue">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Classification</span>
+                            <span class="stat-value" id="classificationValue">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Animation -->
+            <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+                <div class="spinner">
+                    <div class="dot dot-1"></div>
+                    <div class="dot dot-2"></div>
+                    <div class="dot dot-3"></div>
+                </div>
+                <p>Analyzing your review...</p>
+            </div>
+
+            <!-- Status Messages -->
+            <div id="statusMessage" class="status-message"></div>
+        </div>
+    </section>
+
+    <!-- Batch Analysis Section -->
+    <section id="batch" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Batch Analysis</h2>
+                <p>Analyze multiple reviews at once</p>
+            </div>
+
+            <div class="batch-container">
+                <div class="batch-input-section">
+                    <div class="form-group">
+                        <label for="batchInput">Enter Reviews (one per line):</label>
+                        <textarea 
+                            id="batchInput" 
+                            placeholder="Review 1&#10;Review 2&#10;Review 3"
+                            rows="10"
+                        ></textarea>
+                        <div class="input-info">
+                            <span id="batchCharInfo">0</span> reviews | Max 100
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button onclick="analyzeBatch()" class="btn btn-primary">
+                            <i class="fas fa-chart-bar"></i> Analyze Batch
+                        </button>
+                        <button onclick="clearBatch()" class="btn btn-secondary">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Batch Results -->
+                <div id="batchResultPanel" class="batch-result-section" style="display: none;">
+                    <div class="result-header">
+                        <h3>Batch Results</h3>
+                        <button class="btn-close" onclick="closeBatchResult()"><i class="fas fa-times"></i></button>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="batch-stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-list"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="totalReviews">0</div>
+                                <div class="stat-label">Total Reviews</div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card positive">
+                            <div class="stat-icon">
+                                <i class="fas fa-smile"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="positiveCount">0</div>
+                                <div class="stat-label">Positive</div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card negative">
+                            <div class="stat-icon">
+                                <i class="fas fa-frown"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="negativeCount">0</div>
+                                <div class="stat-label">Negative</div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-percentage"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="avgConfidence">0%</div>
+                                <div class="stat-label">Avg Confidence</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Table -->
+                    <div class="results-table-container">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Review Preview</th>
+                                    <th>Sentiment</th>
+                                    <th>Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Batch Loading -->
+                <div id="batchLoadingSpinner" class="loading-spinner" style="display: none;">
+                    <div class="spinner">
+                        <div class="dot dot-1"></div>
+                        <div class="dot dot-2"></div>
+                        <div class="dot dot-3"></div>
+                    </div>
+                    <p>Analyzing batch...</p>
+                </div>
+
+                <!-- Batch Status -->
+                <div id="batchStatusMessage" class="status-message"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documentation Section -->
+    <section id="docs" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>API Documentation</h2>
+                <p>Integrate sentiment analysis into your application</p>
+            </div>
+
+            <div class="docs-grid">
+                <!-- Single Analysis API -->
+                <div class="doc-card">
+                    <div class="doc-header">
+                        <h3>Single Review Analysis</h3>
+                        <span class="badge badge-post">POST</span>
+                    </div>
+                    <pre class="code-block"><code>/api/analyze
+
+{
+  "review": "Great movie!"
+}
+
+Response:
+{
+  "sentiment": "positive",
+  "confidence": 0.95,
+  "prediction": 1
+}</code></pre>
+                </div>
+
+                <!-- Batch Analysis API -->
+                <div class="doc-card">
+                    <div class="doc-header">
+                        <h3>Batch Analysis</h3>
+                        <span class="badge badge-post">POST</span>
+                    </div>
+                    <pre class="code-block"><code>/api/batch-analyze
+
+{
+  "reviews": ["Great!", "Terrible"]
+}
+
+Response:
+{
+  "results": [...],
+  "positive_count": 1,
+  "negative_count": 1
+}</code></pre>
+                </div>
+
+                <!-- Model Info API -->
+                <div class="doc-card">
+                    <div class="doc-header">
+                        <h3>Model Information</h3>
+                        <span class="badge badge-get">GET</span>
+                    </div>
+                    <pre class="code-block"><code>/api/model-info
+
+Response:
+{
+  "model_type": "Naive Bayes",
+  "classes": ["negative", "positive"],
+  "version": "1.0.0"
+}</code></pre>
+                </div>
+
+                <!-- Health Check API -->
+                <div class="doc-card">
+                    <div class="doc-header">
+                        <h3>Health Check</h3>
+                        <span class="badge badge-get">GET</span>
+                    </div>
+                    <pre class="code-block"><code>/health
+
+Response:
+{
+  "status": "healthy",
+  "model_loaded": true
+}</code></pre>
+                </div>
+            </div>
+
+            <!-- Model Details -->
+            <div class="model-details">
+                <h3>Model Details</h3>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <strong>Algorithm:</strong>
+                        <span>Multinomial Naive Bayes</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Vectorization:</strong>
+                        <span>TF-IDF (Term Frequency-Inverse Document Frequency)</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Max Features:</strong>
+                        <span>5000</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>N-gram Range:</strong>
+                        <span>1-2 (unigrams and bigrams)</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Training Data:</strong>
+                        <span>IMDB Movie Reviews (50,000)</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Classes:</strong>
+                        <span>Positive (1) and Negative (0)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Sentiment Analysis</h4>
+                <p>Advanced ML-powered sentiment classification for IMDB reviews</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#metrics">Metrics</a></li>
+                    <li><a href="#analyze">Analyze</a></li>
+                    <li><a href="#batch">Batch</a></li>
+                    <li><a href="#docs">Documentation</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Status</h4>
+                <p id="footerStatus">Checking API...</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Sentiment Analysis. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
